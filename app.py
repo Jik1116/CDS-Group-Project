@@ -67,7 +67,7 @@ def image_to_music(image_input):
 st.title('Images/Text to Music generator')
 
 text_input = st.text_area('Enter text here')
-image_input = st.file_uploader('Upload an image')s
+image_input = st.file_uploader('Upload an image')
 
 if st.button('Generate Music'):
     st.write('Generating music...')
