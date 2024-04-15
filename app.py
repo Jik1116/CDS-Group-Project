@@ -57,11 +57,12 @@ def image_to_music(image_input):
 st.title('Images/Text to Music generator')
 
 text_input = st.text_area('Enter text here')
-image_input = st.file_uploader('Upload an image')
+image_input = st.file_uploader('Upload an image', type=['png', 'jpg'])
 
 if st.button('Generate Music'):
     st.write('Generating music...')
-    caption = image_to_music(image_input)
+    image = Image.open(image_input)
+    caption = image_to_music(image)
     st.write(caption)
     st.audio("output1.wav", format="audio/wav")
 
