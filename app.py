@@ -1,13 +1,8 @@
 import streamlit as st
-import sys
-from transformers import ViTImageProcessor, RobertaTokenizer, Blip2Processor, Blip2ForConditionalGeneration, InstructBlipProcessor, InstructBlipForConditionalGeneration
-
-from datasets import list_metrics
-
+from transformers import Blip2Processor, Blip2ForConditionalGeneration
 from diffusers import AudioLDMPipeline
 
 import torch
-from torch.utils.data import Dataset, DataLoader
 
 from PIL import Image
 
@@ -15,18 +10,13 @@ from peft import LoraConfig, get_peft_model
 
 import accelerate
 
-from diffusers import AudioLDMPipeline
 import torch
 
 import scipy
-import os
-import shutil
-
-
    
-device = "cuda" if torch.cuda.is_available else "cpu"
+device = torch.device("cuda" if torch.cuda.is_available else "cpu")
 
-model = Blip2ForConditionalGeneration.from_pretrained("ybelkada/blip2-opt-2.7b-fp16-sharded", device_map=device, load_in_8bit=True, torch_dtype=torch.float32)
+model = Blip2ForConditionalGeneration.from_pretrained("ybelkada/blip2-opt-2.7b-fp16-sharded", device_map=device, load_in_8bit=True)
 
 config = LoraConfig(
     r=16,
