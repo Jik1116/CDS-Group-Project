@@ -82,9 +82,8 @@ def image_to_music(image_input):
 
     return generated_caption
 
-st.title('Images/Text to Music generator')
+st.title('Image to Music generator')
 
-text_input = st.text_area('Enter text here')
 image_input = st.file_uploader('Upload an image', type=['png', 'jpg'])
 if image_input is not None:
     st.image(image_input)
