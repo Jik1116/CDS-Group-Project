@@ -1,6 +1,6 @@
 import streamlit as st
 from transformers import Blip2Processor, Blip2ForConditionalGeneration, BitsAndBytesConfig
-from diffusers import AudioLDMPipeline
+from diffusers import AudioLDM2Pipeline
 
 import torch
 
@@ -48,9 +48,11 @@ def get_processor():
 
 @st.cache_resource
 def get_audio_pipe():
-    repo_id = "cvssp/audioldm-s-full-v2"
-    pipe = AudioLDMPipeline.from_pretrained(repo_id, torch_dtype=torch.float16)
-    pipe = pipe.to("cuda")
+    pipe = AudioLDM2Pipeline.from_pretrained(
+        "cvssp/audioldm2-music",
+        torch_dtype=torch.float16
+    )
+    pipe = pipe.to(device)
 
     return pipe
 
