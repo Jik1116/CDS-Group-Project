@@ -21,7 +21,11 @@ def get_blip_model():
     quant_config = BitsAndBytesConfig(
         load_in_8bit=True,
     )
-    model = Blip2ForConditionalGeneration.from_pretrained("ybelkada/blip2-opt-2.7b-fp16-sharded", quantization_config=quant_config)
+    model = Blip2ForConditionalGeneration.from_pretrained(
+        "ybelkada/blip2-opt-2.7b-fp16-sharded",
+        device_map = device,
+        quantization_config = quant_config
+    )
     config = LoraConfig(
         r=16,
         lora_alpha=32,
