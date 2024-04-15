@@ -58,19 +58,25 @@ def get_audio_pipe():
 
 
 def image_to_music(image_input):
-    processor = get_processor()
-    inputs = processor(images=image_input, return_tensors="pt").to(device, torch.float32)
-    pixel_values = inputs.pixel_values
+    with st.status("Image to Music pipeline", expanded=True) as status:
+        st.write("Captioning image...")
+        processor = get_processor()
+        inputs = processor(images=image_input, return_tensors="pt").to(device, torch.float32)
+        pixel_values = inputs.pixel_values
 
-    blip_model = get_blip_model()
-    generated_ids = blip_model.generate(pixel_values=pixel_values, max_length=100)
-    # generated text
-    generated_caption = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
+        st.write("Translating description...")
+        blip_model = get_blip_model()
+        generated_ids = blip_model.generate(pixel_values=pixel_values, max_length=100)
+        # generated text
+        generated_caption = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
 
-    pipe = get_audio_pipe()
+        st.write("Generating music...")
+        pipe = get_audio_pipe()
 
-    prompt = generated_caption
-    audio = pipe(prompt, num_inference_steps=10, audio_length_in_s=5.0).audios[0]
+        prompt = generated_caption
+        audio = pipe(prompt, num_inference_steps=10, audio_length_in_s=10.2).audios[0]
+
+        status.update(expanded=False)
     # generated music
     scipy.io.wavfile.write(f"output1.wav", rate=16000, data=audio)
 
@@ -82,7 +88,6 @@ text_input = st.text_area('Enter text here')
 image_input = st.file_uploader('Upload an image', type=['png', 'jpg'])
 
 if st.button('Generate Music'):
-    st.write('Generating music...')
     image = Image.open(image_input)
     caption = image_to_music(image)
     st.write(caption)
