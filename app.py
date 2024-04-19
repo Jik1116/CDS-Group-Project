@@ -1,18 +1,22 @@
 import streamlit as st
+from streamlit_image_select import image_select
+
 from transformers import Blip2Processor, Blip2ForConditionalGeneration, BitsAndBytesConfig
 from diffusers import AudioLDM2Pipeline
-
 import torch
 
 from PIL import Image
 
-from peft import LoraConfig, get_peft_model
+from peft import PeftModel
 
 import accelerate
 
 import torch
 
 import scipy
+
+from pathlib import Path
+import io
    
 device = torch.device("cuda" if torch.cuda.is_available else "cpu")
 
@@ -23,20 +27,10 @@ def get_blip_model():
     )
     model = Blip2ForConditionalGeneration.from_pretrained(
         "ybelkada/blip2-opt-2.7b-fp16-sharded",
-        device_map = device,
+        device_map = "auto",
         quantization_config = quant_config
     )
-    config = LoraConfig(
-        r=16,
-        lora_alpha=32,
-        lora_dropout=0.05,
-        bias="none",
-        target_modules=["q_proj", "k_proj"]
-    )
-
-    training_model = get_peft_model(model, config)
-    state_dict = torch.load("model1.pt")
-    training_model.load_state_dict(state_dict)
+    training_model = PeftModel.from_pretrained(model, "blip-lora")
     training_model.eval()
 
     return training_model
@@ -56,9 +50,13 @@ def get_audio_pipe():
 
     return pipe
 
+@st.cache_data
+def get_sample_music(image_path):
+    _, wav_buffer = image_to_music(Image.open(image_path), num_steps=200, status=False)
+    return wav_buffer
 
-def image_to_music(image_input):
-    with st.status("Image to Music pipeline", expanded=True) as status:
+def image_to_music(image_input, num_steps=10, status=True):
+    with st.status("Image to Music pipeline", expanded=status, state = "running" if status else "complete") as status:
         st.write("Captioning image...")
         processor = get_processor()
         inputs = processor(images=image_input, return_tensors="pt").to(device, torch.float32)
@@ -74,13 +72,14 @@ def image_to_music(image_input):
         pipe = get_audio_pipe()
 
         prompt = generated_caption
-        audio = pipe(prompt, num_inference_steps=10, audio_length_in_s=10.2).audios[0]
+        audio = pipe(prompt, num_inference_steps=num_steps, audio_length_in_s=10.24).audios[0]
 
-        status.update(expanded=False)
+        status.update(expanded=False, state = "complete")
     # generated music
-    scipy.io.wavfile.write(f"output1.wav", rate=16000, data=audio)
+    wav_buffer = io.BytesIO()
+    scipy.io.wavfile.write(wav_buffer, rate=16000, data=audio)
 
-    return generated_caption
+    return generated_caption, wav_buffer
 
 st.title('Image to Music generator')
 
@@ -88,8 +87,17 @@ image_input = st.file_uploader('Upload an image', type=['png', 'jpg'])
 if image_input is not None:
     st.image(image_input)
 
+if image_input is None:
+    sample_image_path = Path("sample_images")
+    sample_image_input = image_select(
+        label = "Select a sample image",
+        images = [image_path for image_path in sample_image_path.iterdir()],
+    )
+    sample_music = get_sample_music(str(sample_image_input))
+    st.audio(sample_music, format="audio/wav")
+
 if st.button('Generate Music'):
-    image = Image.open(image_input)
-    caption = image_to_music(image)
+    image = Image.open(image_input if image_input is not None else sample_image_input)
+    caption, wav_buffer = image_to_music(image)
     st.caption(caption)
-    st.audio("output1.wav", format="audio/wav")
+    st.audio(wav_buffer, format="audio/wav")
